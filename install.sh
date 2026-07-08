@@ -71,36 +71,18 @@ say "  → $APP_DST"
 say "lockvideo スクリプトを配置 → $PREFIX"
 mkdir -p "$PREFIX" "$CFG"
 cp -f "$REPO/lockvideo/apply.py" "$PREFIX/"
-for s in repair.sh reapply.sh refresh.sh watchdog.sh rotate.sh uninstall.sh; do
+for s in repair.sh reapply.sh refresh.sh watchdog.sh rotate.sh uninstall.sh diagnose.sh; do
   [ -f "$REPO/lockvideo/$s" ] && cp -f "$REPO/lockvideo/$s" "$PREFIX/" || true
 done
 chmod +x "$PREFIX"/*.sh 2>/dev/null || true
+printf '%s' "$PREFIX" > "$CFG/prefix"   # アプリ(ログイン項目/open 起動)がスクリプト配置先を解決するのに使う
 
-# ── 6. launchd エージェントを生成・ロード ────────────────────────
-say "launchd エージェントを登録"
+# ── 6. launchd(壁紙復旧) 登録 ＋ アプリ起動(ログイン項目はアプリが管理) ──
+say "launchd エージェント(壁紙復旧)を登録"
 mkdir -p "$LA"
-
-cat > "$LA/$ID_APP.plist" <<PLIST
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-    <key>Label</key><string>$ID_APP</string>
-    <key>ProgramArguments</key>
-    <array>
-        <string>$APP_DST/Contents/MacOS/MonitorWall</string>
-    </array>
-    <key>EnvironmentVariables</key>
-    <dict>
-        <key>MONITORWALL_HOME</key><string>$PREFIX</string>
-        <key>PATH</key><string>/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
-    </dict>
-    <key>RunAtLoad</key><true/>
-    <key>KeepAlive</key><true/>
-    <key>ProcessType</key><string>Background</string>
-</dict>
-</plist>
-PLIST
+# アプリの起動は KeepAlive な launchd ではなく、アプリ自身の SMAppService ログイン項目に一本化する
+# （メニューの「ログイン時に起動」トグルを効かせるため）。旧 app エージェントは撤去。
+rm -f "$LA/$ID_APP.plist"
 
 cat > "$LA/$ID_LV.plist" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
@@ -126,11 +108,13 @@ cat > "$LA/$ID_LV.plist" <<PLIST
 </plist>
 PLIST
 
-for id in "$ID_LV" "$ID_APP"; do
-  launchctl bootout "$GUI/$id" 2>/dev/null || true
-  launchctl bootstrap "$GUI" "$LA/$id.plist" || die "launchctl bootstrap 失敗: $id"
-  say "  loaded $id"
-done
+launchctl bootout "$GUI/$ID_LV" 2>/dev/null || true
+launchctl bootstrap "$GUI" "$LA/$ID_LV.plist" || die "launchctl bootstrap 失敗: $ID_LV"
+say "  loaded $ID_LV"
+
+# アプリを起動（初回起動時に SMAppService ログイン項目を既定ONで登録。以降はメニューでトグル）
+open "$APP_DST"
+say "  launched MonitorWall（メニュー「ログイン時に起動」でON/OFF）"
 
 # ── 完了 ─────────────────────────────────────────────────────────
 say "インストール完了"

@@ -1,5 +1,6 @@
 import Cocoa
 import AVFoundation
+import ServiceManagement
 
 // MARK: - 設定の永続化 (~/.config/monitorwall/config.json)
 
@@ -134,6 +135,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private var activeConversions: [String: Process] = [:]
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        // アンインストーラ用: ログイン項目を解除して即終了（UIは出さない）
+        if CommandLine.arguments.contains("--unregister-login") {
+            if #available(macOS 13.0, *) { try? SMAppService.mainApp.unregister() }
+            NSApp.terminate(nil); return
+        }
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         statusItem.button?.title = "🎬"
         rebuild()
@@ -147,6 +153,35 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         let ws = NSWorkspace.shared.notificationCenter
         ws.addObserver(self, selector: #selector(screenPaused), name: NSWorkspace.screensDidSleepNotification, object: nil)
         ws.addObserver(self, selector: #selector(screenResumed), name: NSWorkspace.screensDidWakeNotification, object: nil)
+        ensureLoginItemFirstRun()
+    }
+
+    // MARK: ログイン時に起動（SMAppService ログイン項目）
+    // 初回起動でだけ既定ONに登録する。以降はユーザーのトグル操作（登録/解除）を尊重する。
+    // 「未登録」状態は "解除した" と "一度も設定していない" が区別できないため、UserDefaults の
+    // フラグで初回だけ登録し、勝手に再ONへ戻さない。
+    private func ensureLoginItemFirstRun() {
+        guard #available(macOS 13.0, *) else { return }
+        let key = "loginItemInitialized"
+        if UserDefaults.standard.bool(forKey: key) { return }
+        UserDefaults.standard.set(true, forKey: key)
+        if SMAppService.mainApp.status != .enabled {
+            try? SMAppService.mainApp.register()
+        }
+    }
+
+    @available(macOS 13.0, *)
+    @objc private func toggleLoginItem() {
+        do {
+            if SMAppService.mainApp.status == .enabled {
+                try SMAppService.mainApp.unregister()
+            } else {
+                try SMAppService.mainApp.register()
+            }
+        } catch {
+            notify("ログイン項目の変更に失敗", error.localizedDescription)
+        }
+        buildMenu()
     }
 
     @objc private func screensChanged() { rebuild() }
@@ -181,14 +216,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         wallpapers.forEach { $0.syncPosition(elapsed: elapsed) }
     }
     private func runScript(_ name: String, _ extra: [String] = []) {
-        // lockvideo スクリプト群の配置先。インストーラが MONITORWALL_HOME を launchd plist に
-        // 設定していればそれを、無ければ標準の ~/.local/share/monitorwall を使う（配布可能化）。
-        let base = ProcessInfo.processInfo.environment["MONITORWALL_HOME"]
-            ?? (NSHomeDirectory() + "/.local/share/monitorwall")
         let p = Process()
         p.launchPath = "/bin/bash"
-        p.arguments = [base + "/" + name] + extra
+        p.arguments = [scriptsBase() + "/" + name] + extra
         try? p.run()
+    }
+    // lockvideo スクリプト群の配置先。ログイン項目(open)経由の起動では launchd の env が無いので、
+    // env → インストーラが書く設定ファイル(~/.config/monitorwall/prefix) → 標準既定 の順で解決する。
+    private func scriptsBase() -> String {
+        if let e = ProcessInfo.processInfo.environment["MONITORWALL_HOME"], !e.isEmpty { return e }
+        if let s = try? String(contentsOfFile: configDir + "/prefix", encoding: .utf8) {
+            let t = s.trimmingCharacters(in: .whitespacesAndNewlines)
+            if !t.isEmpty { return t }
+        }
+        return NSHomeDirectory() + "/.local/share/monitorwall"
     }
     @objc private func repairLock() { runScript("repair.sh", ["--force"]) }   // 手動はデバウンス無視
 
@@ -319,6 +360,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         let repairItem = NSMenuItem(title: "🔧 ロック壁紙を修復", action: #selector(repairLock), keyEquivalent: "")
         repairItem.target = self
         menu.addItem(repairItem)
+        if #available(macOS 13.0, *) {
+            let login = NSMenuItem(title: "ログイン時に起動", action: #selector(toggleLoginItem), keyEquivalent: "")
+            login.target = self
+            login.state = (SMAppService.mainApp.status == .enabled) ? .on : .off
+            menu.addItem(login)
+        }
         menu.addItem(.separator())
         let quitItem = NSMenuItem(title: "終了", action: #selector(quit), keyEquivalent: "q")
         quitItem.target = self
