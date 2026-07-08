@@ -12,7 +12,7 @@ now=$(date +%s); last=$(cat "$CFG/last_repair" 2>/dev/null || echo 0)
 if [ $((now - last)) -lt 30 ]; then
   echo "$(date '+%F %T') reapply skipped (debounce ${last})" >> /tmp/lockvideo.log; exit 0
 fi
-/usr/bin/python3 "$HOME/dev/lockvideo/apply.py" >> /tmp/lockvideo.log 2>&1
+/usr/bin/python3 "$(cd "$(dirname "$0")" && pwd)/apply.py" >> /tmp/lockvideo.log 2>&1
 rc=$?
 if [ "$rc" = "0" ]; then
   echo "$now" > "$CFG/last_repair"

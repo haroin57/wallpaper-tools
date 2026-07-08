@@ -5,7 +5,7 @@ cd "$(dirname "$0")"
 
 APP="MonitorWall.app"
 BIN="MonitorWall"
-BUNDLE_ID="com.haroin.monitorwall"
+BUNDLE_ID="${MONITORWALL_BUNDLE_ID:-com.monitorwall.app}"
 
 echo "== コンパイル =="
 xcrun swiftc -O -swift-version 5 \
