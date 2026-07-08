@@ -64,18 +64,36 @@ hr "5. apply.py 手動実行（RESULT とスロット割当）"
 if [ -f "$APPLY" ]; then python3 "$APPLY"; echo "(exit $?)"; else echo "apply.py が見つからない"; fi
 echo; echo "--- /tmp/lockvideo.log (末尾40) ---"; tail -40 /tmp/lockvideo.log 2>/dev/null || echo "(無し)"
 
-hr "6. 実際に適用されたか（Index.plist の権威データ Spaces）"
+hr "6. 実際に適用されたか（Index.plist の権威データ／スキーマ自動判定）"
 python3 - "$IDX" <<'PY' 2>/dev/null || echo "(Index.plist 読めず)"
 import plistlib,sys
 idx=plistlib.load(open(sys.argv[1],'rb'))
-def aid(l):
-    try:return plistlib.loads(l["Content"]["Choices"][0]["Configuration"]).get("assetID")[:8]
+def cfg(b):
+    try:return plistlib.loads(b["Content"]["Choices"][0]["Configuration"]).get("assetID")[:8]
     except:return "?"
-for sk,sv in (idx.get("Spaces") or {}).items():
-    print(f"  Space {sk[:8] or chr(39)*2+'(cur)'}  Default={aid(sv.get('Default',{}).get('Linked',{}))}")
-    for d,dv in (sv.get("Displays") or {}).items():
-        print(f"       Displays[{d[:8]}] -> {aid(dv.get('Linked',{}))}")
-print(f"  SystemDefault -> {aid(idx.get('SystemDefault',{}).get('Linked',{}))}")
+sd=idx.get("SystemDefault",{})
+asd=idx.get("AllSpacesAndDisplays")
+scene = (isinstance(sd,dict) and ("Idle" in sd or "Desktop" in sd)) or \
+        (isinstance(asd,dict) and asd.get("Type")=="individual")
+if scene:
+    print("  スキーマ: Desktop/Idle（新・macOS26）")
+    for key in ("AllSpacesAndDisplays","SystemDefault"):
+        sc=idx.get(key)
+        if isinstance(sc,dict):
+            for name in ("Desktop","Idle"):
+                b=sc.get(name)
+                if isinstance(b,dict) and "Content" in b: print(f"  {key}.{name} -> {cfg(b)}")
+    for d,dv in (idx.get("Displays") or {}).items():
+        for name in ("Desktop","Idle"):
+            b=dv.get(name) if isinstance(dv,dict) else None
+            if isinstance(b,dict) and "Content" in b: print(f"  Displays[{d[:8]}].{name} -> {cfg(b)}")
+else:
+    print("  スキーマ: Linked（旧）")
+    for sk,sv in (idx.get("Spaces") or {}).items():
+        print(f"  Space {sk[:8] or chr(39)*2+'(cur)'} Default={cfg(sv.get('Default',{}).get('Linked',{}))}")
+        for d,dv in (sv.get("Displays") or {}).items():
+            print(f"       Displays[{d[:8]}] -> {cfg(dv.get('Linked',{}))}")
+    print(f"  SystemDefault -> {cfg(sd.get('Linked',{}))}")
 PY
 
 hr "判定の目安"
