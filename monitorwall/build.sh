@@ -9,7 +9,7 @@ BUNDLE_ID="${MONITORWALL_BUNDLE_ID:-com.monitorwall.app}"
 
 echo "== コンパイル =="
 xcrun swiftc -O -swift-version 5 \
-  -framework Cocoa -framework AVFoundation \
+  -framework Cocoa -framework AVFoundation -framework ServiceManagement \
   main.swift -o "$BIN"
 
 echo "== .app バンドル生成 =="

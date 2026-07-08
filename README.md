@@ -75,6 +75,7 @@ open /Applications/MonitorWall.app
 | 全モニタに同じ動画… | 一括設定 |
 | 再読み込み | 設定ファイルを読み直す |
 | 🔧 ロック壁紙を修復 | lockvideo（下記）の強制修復を手動実行 |
+| ログイン時に起動 | チェックで macOS のログイン項目に登録／解除（`SMAppService`。macOS 13+） |
 
 設定は `~/.config/monitorwall/config.json` に保存される。ロック／スリープ時は自動で一時停止し、解除時に同期して再生を再開する。
 
@@ -109,6 +110,7 @@ open /Applications/MonitorWall.app
 | `reapply.sh` | LaunchAgent(`WatchPaths`)からの自動再適用。`repair.sh`と同じロック/デバウンスを共有し、自己増殖ループを防止 |
 | `refresh.sh` | ロック解除の直後に先回りでWallpaperAgentを再起動（3秒クールダウンのみ）。次のロックを常に「健全な初回」として迎えるための対策 |
 | `watchdog.sh` | ロック中のCPU使用率から黒画面を検出（aerials拡張は健全時~6%、スタール時~0.3%） |
+| `diagnose.sh` | ロック画面が反映されない時の切り分け。Aerial前提・割当・変換ログ・apply結果・Spaces適用状態を一括ダンプし原因の目安を提示 |
 | `uninstall.sh` | フルシステムのアンインストール＋壁紙復元（`install.sh` が退避したバックアップから）。`--yes`／`--purge` |
 | `restore.sh` | （旧・手動運用向け）元の状態へ復元する簡易版。配布版では `uninstall.sh` を使う |
 | `sleepmonitor.swift` | ロック/スリープ関連の全通知とaerials拡張のCPU推移を記録する診断ツール |

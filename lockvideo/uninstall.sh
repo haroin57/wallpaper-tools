@@ -32,6 +32,12 @@ if [ "$YES" != "1" ]; then
   exit 0
 fi
 
+say "ログイン項目を解除"
+if [ -d "$APP_DST" ]; then
+  open "$APP_DST" --args --unregister-login 2>/dev/null || true
+  sleep 2
+fi
+
 say "launchd エージェントを停止・削除"
 for id in com.monitorwall.app com.monitorwall.lockvideo com.haroin.monitorwall com.haroin.lockvideo; do
   launchctl bootout "$GUI/$id" 2>/dev/null || true
@@ -42,6 +48,7 @@ sleep 1
 
 say "MonitorWall.app を削除"
 rm -rf "$APP_DST"
+defaults delete com.monitorwall.app 2>/dev/null || true   # 初回登録フラグをリセット（再インストール時に再登録）
 
 say "壁紙設定を復元"
 if [ -f "$PREFIX/backup/Index.original.plist" ]; then
