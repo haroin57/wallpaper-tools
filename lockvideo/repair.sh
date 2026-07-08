@@ -15,6 +15,6 @@ fi
 echo "$now" > "$CFG/last_repair"
 /usr/bin/killall WallpaperAgent WallpaperAerialsExtension 2>/dev/null
 sleep 1
-/usr/bin/python3 "$HOME/dev/lockvideo/apply.py" >/dev/null 2>&1
+/usr/bin/python3 "$(cd "$(dirname "$0")" && pwd)/apply.py" >/dev/null 2>&1
 /usr/bin/killall WallpaperAgent 2>/dev/null
 echo "$(date '+%F %T') manual/forced repair" >> /tmp/lockvideo.log

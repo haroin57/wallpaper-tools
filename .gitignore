@@ -4,3 +4,7 @@
 .omc/
 *.bak
 *.bak-*
+__pycache__/
+*.pyc
+# ビルド成果物（install.sh / build.sh が生成する。追跡しない）
+monitorwall/MonitorWall.app/
