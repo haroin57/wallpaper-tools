@@ -101,7 +101,7 @@ open /Applications/MonitorWall.app
 
 > **要点（macOSの権威データとスキーマ差）**: `Index.plist` には2つのスキーマが実環境で併存し、`apply.py` は実物を見て両対応で分岐する（OSバージョンでは決まらない）。
 > - **Linked（旧）**: 各スコープが `Linked` 一枚。権威は `Spaces[*].Displays[uuid]`、単一画面時は `SystemDefault`。`AllSpacesAndDisplays` は `"$null"`。
-> - **Desktop/Idle（新・macOS 26 Tahoe）**: 各スコープが `Desktop`(壁紙)/`Idle`(ロック画面) の2シーン。権威は `AllSpacesAndDisplays`(Type=individual)。ここを潰すと割当が消えるので `"$null"` にしてはいけない。lockvideo は既定で `Idle` のみに注入する（デスクトップは MonitorWall 担当。両方にしたい場合は `SCENE_KEYS = ("Desktop","Idle")`）。
+> - **Desktop/Idle（新・macOS 26 Tahoe）**: 各スコープが `Desktop`(壁紙)/`Idle`(ロック画面) の2シーン。権威は `AllSpacesAndDisplays`(Type=individual)。ここを潰すと割当が消えるので `"$null"` にしてはいけない。既定で `Desktop` と `Idle` の両方へ注入する（ロック画面だけにしたい場合は `SCENE_KEYS = ("Idle",)`）。
 >
 > どちらも WallpaperAgent 再起動で巻き戻らないよう、権威データまで書き込む。
 
