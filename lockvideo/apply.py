@@ -33,6 +33,16 @@ AERIAL_PROVIDER = "com.apple.wallpaper.choice.aerials"
 SCENE_KEYS = ("Desktop", "Idle")
 
 
+def _require_store():
+    """aerial 壁紙ストアの有無で macOS 世代を早期判定する。動画ロック画面は
+    com.apple.wallpaper + aerial ストアが導入された macOS 14 Sonoma 以降が前提で、
+    Ventura(13) 以前には注入先が存在しない。traceback ではなく理由を返して止める。"""
+    if not os.path.isdir(WP) or not os.path.exists(MAN):
+        sys.exit("lockvideo: aerial 壁紙ストア(com.apple.wallpaper)が見つかりません。"
+                 "動画ロック画面は macOS 14 Sonoma 以降が必要です"
+                 f"（missing: {MAN}）")
+
+
 def connected_displays():
     """実接続中ディスプレイの (UUID集合, メインUUID) を CoreGraphics 経由(ctypes/pyobjc非依存)で返す。
     近年 CGDisplayCreateUUIDFromDisplayID は ColorSync にシンボルが移動しているため両方を探索。
@@ -344,6 +354,7 @@ def ensure_assets(pairs, man, slots):
 
 def cmd_ensure():
     """通常モード: watchdog/reapply用。ファイル/manifest/Index整合を維持(現在のstateのまま)。killall前提。"""
+    _require_store()
     man = json.load(open(MAN))
     connected, main = connected_displays()
     pairs = resolve_pairs(man, connected)
@@ -364,6 +375,7 @@ def cmd_ensure():
 
 def cmd_rotate():
     """解除トリガー用: 双子スロットを交互切替。killall不要(WallpaperCreationRequestに差分を作るだけ)。"""
+    _require_store()
     man = json.load(open(MAN))
     connected, main = connected_displays()
     pairs = resolve_pairs(man, connected)
