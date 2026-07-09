@@ -43,11 +43,12 @@ bash ~/.local/share/monitorwall/uninstall.sh --yes --purge  # 設定も全削除
 
 ## 要件
 
-- macOS 12 以降（開発・検証は macOS 26 Tahoe / Apple Silicon）
+- **monitorwall（デスクトップ壁紙）**: macOS 12 以降
+- **lockvideo（ロック画面）**: **macOS 14 Sonoma 以降が必須**。動画ロック画面の基盤である `com.apple.wallpaper` の aerial 壁紙ストアは Sonoma で導入されたもので、Ventura 13 以前には注入先そのものが存在しない。さらに事前に一度「システム設定 > 壁紙」で Aerial/ダイナミック壁紙を選択し、注入先スロットを生成しておくこと
+- 開発・検証は macOS 26 Tahoe / Apple Silicon
 - Xcode Command Line Tools（`swiftc` / `codesign` が使えること）
 - Python 3（macOS標準で同梱）
 - `ffmpeg`（動画をHEVC `.mov` へ変換する。`brew install ffmpeg`）
-- ロック画面機能を使う場合、事前に一度 Aerial/ダイナミック壁紙を選択しておくこと（注入先の aerial スロットが生成される）
 
 ---
 

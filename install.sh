@@ -30,6 +30,10 @@ die()  { printf "\033[1;31m[x]\033[0m %s\n" "$*" >&2; exit 1; }
 # ── 1. 前提チェック ───────────────────────────────────────────────
 say "前提チェック"
 [ "$(uname)" = "Darwin" ] || die "macOS 専用です"
+OSMAJ=$(sw_vers -productVersion 2>/dev/null | cut -d. -f1)
+[ "${OSMAJ:-0}" -ge 14 ] || die "動画ロック画面(lockvideo)は macOS 14 Sonoma 以降が必要です（現在: $(sw_vers -productVersion 2>/dev/null)）。
+   com.apple.wallpaper の aerial 壁紙ストアが Sonoma で導入されたためで、13 以前には注入先が存在しません。
+   デスクトップ壁紙(monitorwall)だけなら macOS 12+ で手動ビルドできます: cd monitorwall && bash build.sh"
 command -v python3 >/dev/null 2>&1 || die "python3 が見つかりません"
 xcrun --find swiftc >/dev/null 2>&1 || die "swiftc がありません。'xcode-select --install' で Command Line Tools を入れてください"
 command -v ffmpeg  >/dev/null 2>&1 || die "ffmpeg がありません。'brew install ffmpeg' を実行してください（動画のHEVC変換に使用）"
